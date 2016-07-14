@@ -1,0 +1,26 @@
+# encoding: UTF-8
+
+FROM <%= ENV.fetch('FROM') %>
+MAINTAINER The Blue Beluga <admin@bluebeluga.io>
+
+LABEL name="vault"
+LABEL description="Alpine Linux Base with Vault"
+LABEL version="<%= ENV.fetch('VAULT_VERSION') %>"
+LABEL git_revision="<%= ENV.fetch('GIT_REVISION') %>"
+
+ENV VAULT_VERSION <%= ENV.fetch('VAULT_VERSION') %>
+ENV VAULT_SHA256 <%= ENV.fetch('VAULT_SHA256') %>
+
+RUN apk-install curl ca-certificates && \
+    curl -sSLO https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip && \
+    echo "${VAULT_SHA256}  vault_${VAULT_VERSION}_linux_amd64.zip" | sha256sum -c - && \
+    unzip vault_${VAULT_VERSION}_linux_amd64.zip -d /bin && \
+    rm vault_${VAULT_VERSION}_linux_amd64.zip && \
+    apk del curl && \
+    rm -rf /var/cache/apk/*
+
+COPY files/dev.hcl /etc/vault.hcl
+
+EXPOSE 8200
+ENTRYPOINT ["/bin/vault", "server"]
+CMD ["-config=/etc/vault.hcl"]
